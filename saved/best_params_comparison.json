@@ -1,0 +1,20 @@
+{
+  "best_params_train": {
+    "subsample": 0.7,
+    "reg_lambda": 0.8,
+    "reg_alpha": 0.01,
+    "n_estimators": 50,
+    "max_depth": 3,
+    "learning_rate": 0.1,
+    "colsample_bytree": 0.9
+  },
+  "best_params_cv": {
+    "subsample": 0.9,
+    "reg_lambda": 0.8,
+    "reg_alpha": 0.01,
+    "n_estimators": 120,
+    "max_depth": 3,
+    "learning_rate": 0.01,
+    "colsample_bytree": 1.0
+  }
+}

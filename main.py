@@ -8,10 +8,8 @@ from pydantic import BaseModel, Field
 from typing import Dict, List, Optional
 import uvicorn
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from fastapi.middleware.cors import CORSMiddleware
 import os
 
-# Pydantic models untuk input
 class PredictionInput(BaseModel):
     elevasi_mdpl: float
     suhu_c: float
@@ -28,7 +26,6 @@ class BatchPredictionInput(BaseModel):
 class BatchPredictionResponse(BaseModel):
     predictions: List[Dict]
 
-# Inisialisasi FastAPI
 app = FastAPI(
     title="Productivity Predictor API",
     description="API untuk prediksi produktivitas pertanian menggunakan model XGBoost",
@@ -37,20 +34,19 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:8000", "http://localhost:8000"],  # ganti '*' hanya untuk dev jika perlu
+    allow_origins=["http://127.0.0.1:8000", "http://localhost:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Global variables untuk model dan preprocessors
 model_produktivitas = None
 scaler = None
 onehot_encoder_pola = None
 is_loaded = False
 
 def load_model_components():
-    """Load model dan komponen preprocessing - SAMA SEPERTI DI COLAB"""
+    """Load model dan komponen preprocessing."""
     global model_produktivitas, scaler, onehot_encoder_pola, is_loaded
     
     try:
@@ -58,7 +54,7 @@ def load_model_components():
         model_path = 'saved/model.pkl'
         
         if not os.path.exists(model_path):
-            print(f"❌ File model tidak ditemukan di: {model_path}")
+            print(f"File model tidak ditemukan di: {model_path}")
             print("Pastikan file model.pkl dari Colab sudah ada di folder 'saved/'")
             return False
         
@@ -70,23 +66,20 @@ def load_model_components():
         model_produktivitas = loaded['model_produktivitas']
         scaler = loaded['scaler']
         onehot_encoder_pola = loaded['onehot_encoder_pola']
-        
-        print("✅ Model produktivitas loaded")
-        print("✅ Scaler loaded")
-        print("✅ OneHotEncoder pola_tanam loaded")
-        
+        print("Model produktivitas loaded")
+        print("Scaler loaded")
+        print("OneHotEncoder pola_tanam loaded")
         # Validasi bahwa semua komponen sudah fitted
         if not hasattr(scaler, 'mean_'):
-            print("⚠️  Warning: Scaler belum fitted!")
+            print("Warning: Scaler belum fitted!")
             return False
             
         if not hasattr(onehot_encoder_pola, 'categories_'):
-            print("⚠️  Warning: OneHotEncoder belum fitted!")
+            print("Warning: OneHotEncoder belum fitted!")
             return False
         
-        print(f"📊 Kategori pola_tanam: {list(onehot_encoder_pola.categories_[0])}")
-        print(f"📊 Jumlah fitur model: {model_produktivitas.n_features_in_}")
-        
+        print(f"Kategori pola_tanam: {list(onehot_encoder_pola.categories_[0])}")
+        print(f"Jumlah fitur model: {model_produktivitas.n_features_in_}")
         is_loaded = True
         return True
         
@@ -98,19 +91,19 @@ def load_model_components():
 
 @app.on_event("startup")
 async def startup_event():
-    """Load model saat aplikasi startup"""
+    """Load model saat aplikasi startup."""
     global is_loaded
     success = load_model_components()
     if success:
-        print("🚀 API siap digunakan!")
+        print("API siap digunakan")
     else:
-        print("⚠️  API berjalan tapi model belum loaded. Gunakan /reload_model/ untuk load ulang.")
+        print("API berjalan tapi model belum loaded. Gunakan /reload_model/ untuk load ulang.")
 
 @app.get("/")
 async def root():
     return {
         "message": "Productivity Predictor API",
-        "status": "Model loaded ✅" if is_loaded else "Model not loaded ❌",
+        "status": "Model loaded" if is_loaded else "Model not loaded",
         "endpoints": {
             "predict": "/predict/ - Prediksi tunggal",
             "batch_predict": "/batch_predict/ - Prediksi batch",
@@ -138,7 +131,7 @@ async def reload_model():
     """Reload model dari file"""
     success = load_model_components()
     if success:
-        return {"message": "Model berhasil direload ✅", "status": "success"}
+        return {"message": "Model berhasil direload", "status": "success"}
     else:
         raise HTTPException(status_code=500, detail="Gagal memuat model. Cek console untuk detail error.")
 
@@ -148,15 +141,12 @@ def preprocess_input(df):
     Mengikuti alur: OneHotEncoding → Combine → Scaling
     """
     global onehot_encoder_pola, scaler
-    
-    # Step 1: One Hot Encoding untuk pola_tanam (SAMA SEPERTI DI COLAB)
+    # One Hot Encoding untuk pola_tanam
     pola_encoded = onehot_encoder_pola.transform(df[['pola_tanam']])
-    
-    # Step 2: Gabungkan fitur numerik dengan hasil encoding (SAMA SEPERTI DI COLAB)
+    # Gabungkan fitur numerik dengan hasil encoding
     X_numeric = df[['elevasi_mdpl', 'suhu_c', 'curah_hujan_mm_per_day']].values
     X = np.hstack([X_numeric, pola_encoded])
-    
-    # Step 3: Scale features (SAMA SEPERTI DI COLAB)
+    # Scale features
     X_scaled = scaler.transform(X)
     
     return X_scaled
@@ -179,12 +169,12 @@ async def predict(input_data: PredictionInput):
     """
     if not is_loaded:
         raise HTTPException(
-            status_code=503, 
+            status_code=503,
             detail="Model belum dimuat. Gunakan endpoint /reload_model/ untuk memuat model."
         )
     
     try:
-        # Convert input ke DataFrame (SAMA SEPERTI DI COLAB)
+        # Convert input ke DataFrame
         input_dict = input_data.dict()
         df = pd.DataFrame([input_dict])
         
@@ -202,10 +192,10 @@ async def predict(input_data: PredictionInput):
                 detail=f"Nilai pola_tanam tidak valid. Gunakan salah satu: {valid_pola}"
             )
         
-        # PREPROCESSING - SAMA SEPERTI DI COLAB
+        # PREPROCESSING
         X_scaled = preprocess_input(df)
         
-        # PREDICTION - SAMA SEPERTI DI COLAB
+        # PREDICTION
         produktivitas_pred = model_produktivitas.predict(X_scaled)[0]
         
         return {
@@ -245,13 +235,10 @@ async def batch_predict(batch_input: BatchPredictionInput):
     ```
     """
     if not is_loaded:
-        raise HTTPException(
-            status_code=503, 
-            detail="Model belum dimuat. Gunakan endpoint /reload_model/ untuk memuat model."
-        )
+        raise HTTPException(status_code=503, detail="Model belum dimuat. Gunakan endpoint /reload_model/ untuk memuat model.")
     
     try:
-        # Convert batch input ke DataFrame (SAMA SEPERTI DI COLAB)
+        # Convert batch input ke DataFrame
         data_list = [item.dict() for item in batch_input.data]
         df = pd.DataFrame(data_list)
         
@@ -270,10 +257,10 @@ async def batch_predict(batch_input: BatchPredictionInput):
                 detail=f"Nilai pola_tanam tidak valid: {invalid_pola}. Gunakan: {valid_pola}"
             )
         
-        # PREPROCESSING - SAMA SEPERTI DI COLAB
+        # PREPROCESSING
         X_scaled = preprocess_input(df)
         
-        # PREDICTIONS - SAMA SEPERTI DI COLAB
+        # PREDICTIONS
         predictions = model_produktivitas.predict(X_scaled)
         
         # Format response
@@ -339,10 +326,10 @@ async def get_model_info():
 
 if __name__ == "__main__":
     print("="*60)
-    print("🚀 Starting Productivity Predictor API")
+    print("Starting Productivity Predictor API")
     print("="*60)
-    print("📝 Pastikan file model ada di: saved/model.pkl")
-    print("🔗 API akan berjalan di: http://0.0.0.0:8000")
-    print("📚 Dokumentasi API: http://0.0.0.0:8000/docs")
+    print("Pastikan file model ada di: saved/model.pkl")
+    print("API akan berjalan di: http://0.0.0.0:8000")
+    print("Dokumentasi API: http://0.0.0.0:8000/docs")
     print("="*60)
     uvicorn.run(app, host="0.0.0.0", port=8001)

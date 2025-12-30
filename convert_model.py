@@ -1,6 +1,5 @@
-"""
-Script untuk mengkonversi model dari Colab agar kompatibel dengan environment lokal
-Jalankan script ini untuk membuat model baru yang kompatibel
+"""Script untuk mengkonversi model dari Colab agar kompatibel dengan environment lokal.
+Jalankan script ini untuk membuat model baru yang kompatibel.
 """
 
 import pandas as pd
@@ -24,8 +23,8 @@ class ProductivityPredictor:
         """Mengambil data dari file CSV"""
         try:
             df = pd.read_csv(filepath)
-            print(f"✅ Data loaded successfully from {filepath}")
-            print(f"📊 Data shape: {df.shape}")
+            print(f"Data loaded successfully from {filepath}")
+            print(f"Data shape: {df.shape}")
             return df
         except FileNotFoundError:
             raise FileNotFoundError(f"File {filepath} not found.")
@@ -39,7 +38,7 @@ class ProductivityPredictor:
         # Step 1: One Hot Encoding untuk pola_tanam
         if training:
             pola_encoded = self.onehot_encoder_pola.fit_transform(df[['pola_tanam']])
-            print(f"✅ OneHotEncoder fitted - Kategori: {list(self.onehot_encoder_pola.categories_[0])}")
+            print(f"OneHotEncoder fitted - Kategori: {list(self.onehot_encoder_pola.categories_[0])}")
         else:
             pola_encoded = self.onehot_encoder_pola.transform(df[['pola_tanam']])
         
@@ -53,7 +52,7 @@ class ProductivityPredictor:
         # Step 3: Scale features
         if training:
             X_scaled = self.scaler.fit_transform(X)
-            print(f"✅ Scaler fitted - Mean: {self.scaler.mean_[:3]}")
+            print(f"Scaler fitted - Mean sample: {self.scaler.mean_[:3]}")
         else:
             X_scaled = self.scaler.transform(X)
         
@@ -259,11 +258,11 @@ class ProductivityPredictor:
             'train_metrics': self.train_metrics
         }, filepath)
         
-        print(f"\n✅ Model saved to {filepath}")
+        print(f"Model saved to {filepath}")
 
 def main():
     print("="*60)
-    print("🔄 MODEL CONVERSION SCRIPT")
+    print("MODEL CONVERSION SCRIPT")
     print("="*60)
     print("Script ini akan membuat model baru yang kompatibel")
     print("dengan environment lokal Anda.\n")
@@ -272,11 +271,11 @@ def main():
     csv_files = [f for f in os.listdir('.') if f.endswith('.csv')]
     
     if not csv_files:
-        print("❌ Tidak ada file CSV ditemukan!")
+        print("Tidak ada file CSV ditemukan!")
         print("Pastikan file training data (test_sample2.csv) ada di folder ini.")
         return
     
-    print(f"📁 File CSV ditemukan: {csv_files}")
+    print(f"File CSV ditemukan: {csv_files}")
     
     # Gunakan file pertama atau yang sesuai
     csv_file = csv_files[0]
@@ -285,7 +284,7 @@ def main():
             csv_file = f
             break
     
-    print(f"\n📂 Menggunakan file: {csv_file}")
+    print(f"\nMenggunakan file: {csv_file}")
     
     # Initialize predictor
     predictor = ProductivityPredictor()
@@ -300,14 +299,14 @@ def main():
     predictor.save_models('saved/model.pkl')
     
     print("\n" + "="*60)
-    print("✅ KONVERSI SELESAI!")
+    print("KONVERSI SELESAI")
     print("="*60)
     print("Model baru telah disimpan di: saved/model.pkl")
     print("Anda bisa menjalankan API dengan: python main.py")
     print("="*60)
     
     # Test prediction
-    print("\n🧪 Testing prediction dengan model baru...")
+    print("\nTesting prediction dengan model baru...")
     test_data = {
         'elevasi_mdpl': 836,
         'suhu_c': 22.4,
@@ -321,7 +320,7 @@ def main():
     
     print(f"Input: {test_data}")
     print(f"Prediksi produktivitas: {pred:.2f} kg/ha")
-    print("\n✅ Model berfungsi dengan baik!")
+    print("Model berfungsi dengan baik")
 
 if __name__ == "__main__":
     main()
